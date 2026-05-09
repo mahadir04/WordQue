@@ -42,9 +42,12 @@ from fastapi.staticfiles import StaticFiles
 os.makedirs("data/pdfs", exist_ok=True)
 app.mount("/pdfs", StaticFiles(directory="data/pdfs"), name="pdfs")
 
+# Production CORS
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
