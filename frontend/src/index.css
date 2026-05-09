@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ── DocuAI Design Tokens ── */
+@theme {
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #10b981; /* Emerald Green */
+  --color-primary-600: #059669;
+  --color-primary-700: #047857;
+  --color-primary-800: #065f46;
+  --color-primary-900: #064e3b; /* Forest Green */
+
+  --color-surface-50: #ffffff;  
+  --color-surface-100: #f8fafc; 
+  --color-surface-200: #f1f5f9; 
+  --color-surface-300: #e2e8f0;
+  --color-surface-400: #94a3b8;
+  --color-surface-500: #64748b;
+  --color-surface-600: #475569;
+  --color-surface-700: #334155;
+  --color-surface-800: #1e293b;
+  --color-surface-900: #0f172a; 
+  --color-surface-950: #0c1214; /* DocuAI Sidebar Black */
+
+  /* DocuAI Specific */
+  --color-docu-bg: #ffffff;
+  --color-docu-sidebar: #0b1612;
+  --color-docu-accent: #10b981;
+
+  --font-sans: 'Inter', 'system-ui', sans-serif;
+}
+
+/* ── Base ──────────────────────────────────────────────── */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--color-docu-bg);
+  color: var(--color-surface-900);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Custom Classes ── */
+.sidebar-link {
+  @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200;
+}
+.sidebar-link-active {
+  @apply bg-primary-500/10 text-primary-400;
+}
+.sidebar-link-inactive {
+  @apply text-surface-500 hover:text-surface-300 hover:bg-white/5;
+}
+
+.stat-card {
+  @apply bg-white p-5 rounded-[1.5rem] border border-surface-200 shadow-sm transition-all duration-300 hover:shadow-md;
+}
+
+.bento-card {
+  @apply bg-white rounded-[2.5rem] border border-surface-200 shadow-sm p-8;
+}
+
+.login-input {
+  @apply w-full px-5 py-4 rounded-2xl bg-surface-50 border border-surface-200 text-surface-900 placeholder:text-surface-400 font-medium focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all duration-200;
+}
+
+.glass {
+  @apply bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl;
+}
+
+/* ── Orb Animations ── */
+.login-orb {
+  @apply absolute rounded-full blur-[120px] opacity-20 pointer-events-none;
+}
+.login-orb-1 {
+  @apply w-[500px] h-[500px] bg-primary-500 -top-20 -left-20 animate-pulse;
+}
+.login-orb-2 {
+  @apply w-[400px] h-[400px] bg-primary-900 -bottom-20 -right-20 animate-pulse;
+  animation-delay: 2s;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
