@@ -15,15 +15,20 @@ WordQue is a state-of-the-art, full-stack RAG (Retrieval-Augmented Generation) p
 *   **Private Corpora**: Every user has their own isolated knowledge base. No data leakage between accounts.
 *   **Ownership Persistence**: Documents, vectors, and chat histories are strictly filtered by User ID at the database and vector-store levels.
 
+### 🎨 Premium Aesthetics & Dark Mode
+*   **Dynamic Theming**: Seamlessly switch between Light and Dark modes with a single click.
+*   **Bento-Card Design**: A modern, glassmorphic UI built for clarity and visual excellence.
+*   **Fully Responsive**: Optimized for mobile, tablet, and desktop devices with adaptive chat and dashboard layouts.
+
 ### 🧠 Intelligent RAG Engine
-*   **Semantic Search**: Powered by local `sentence-transformers` (HuggingFace) for lightning-fast indexing and retrieval.
-*   **Google Gemini 2.0 Flash**: Utilizing the latest in LLM technology for context-aware Q&A, reasoning, and synthesis.
+*   **Semantic Search**: Powered by local `sentence-transformers` for lightning-fast indexing and retrieval.
+*   **Session-Aware Conversations**: Chat history is isolated by session, allowing you to maintain multiple deep dives simultaneously.
 *   **Interactive Citations**: Every AI response includes clickable sources, showing you exactly which document and page the information came from.
 
-### 📚 Knowledge Base Management
-*   **Real-time Indexing**: Upload 1-10 PDFs simultaneously with automatic content type detection (Code, Research, Business, etc.).
-*   **Permanent Removal**: Completely wipe documents and their vector data from the system with a single click.
-*   **Automated Summarization**: Point-by-point, spaced summaries with "map-reduce" logic for large document sets.
+### 📚 Knowledge Base & Data Control
+*   **Real-time Indexing**: Upload 1-10 PDFs simultaneously with automatic metadata extraction.
+*   **Advanced Settings**: Manage your profile, check live system health, and control your data privacy.
+*   **Danger Zone**: One-click actions to purge entire chat histories or wipe your knowledge base securely.
 
 ### 🎓 Professional Tutor Mode
 *   **Smart Quizzes**: Auto-generate MCQs, True/False, and Short Answer questions adapted to the specific domain of your PDFs.
