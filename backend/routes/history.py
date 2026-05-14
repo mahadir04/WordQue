@@ -159,3 +159,19 @@ async def delete_session(
         return {"deleted": session_id}
     finally:
         await db.close()
+@router.delete("/clear-all")
+async def clear_all_sessions(current_user: dict = Depends(get_current_user)):
+    """Delete all chat sessions and messages for the current user."""
+    db = await get_db()
+    try:
+        user_id = current_user["id"]
+        # Delete messages first (though foreign keys should handle it if set up, but let's be explicit)
+        await db.execute(
+            "DELETE FROM chat_messages WHERE session_id IN (SELECT id FROM chat_sessions WHERE user_id = ?)",
+            (user_id,)
+        )
+        await db.execute("DELETE FROM chat_sessions WHERE user_id = ?", (user_id,))
+        await db.commit()
+        return {"ok": True, "deleted_count": "all"}
+    finally:
+        await db.close()

@@ -151,7 +151,9 @@ class VectorStore:
             if user_id and c.get("user_id") != user_id:
                 continue
             # Check session isolation if requested
-            if session_id and c.get("session_id") != session_id:
+            # Global chunks (session_id is None) are visible everywhere
+            chunk_sid = c.get("session_id")
+            if session_id and chunk_sid is not None and chunk_sid != session_id:
                 continue
             indices.append(i)
 

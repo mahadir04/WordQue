@@ -17,7 +17,7 @@ from services.summarizer import summarize_with_bart
 load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY", ""))
 
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-flash-latest"
 
 
 # ── Helpers ────────────────────────────────────────────────
@@ -130,27 +130,50 @@ async def summarize_document(doc_id: str | None = None, user_id: str = None) -> 
     doc_type  = _infer_doc_type(chunks)
 
     # ── BART summarization ──
+    # First pass: use local BART to reduce the text length.
     bart_summary = summarize_with_bart(full_text)
 
-    # ── Optional Gemini polish pass (formats bullet points) ──
-    polish_prompt = (
-        f"You are a professional technical summarizer. Summarize the {doc_type} document titled '{label}'.\n\n"
-        f"Raw Summary Material:\n{bart_summary}\n\n"
-        f"INSTRUCTIONS:\n"
-        f"1. Create a highly readable, point-by-point summary.\n"
-        f"2. Use bullet points and add extra vertical spacing between major points to make it 'breathable'.\n"
-        f"3. Use bold headings for different sections if applicable.\n"
-        f"4. Keep the language professional yet very easy to understand.\n"
-        f"5. Do not lose any factual details.\n\n"
-        f"OUTPUT (spaced, point-by-point summary):"
-    )
+    # ── Gemini Polish Pass ──
+    # Second pass: use Gemini (1.5 Flash) to format the raw BART summary into beautiful markdown.
+    prompt = f"""You are an elite technical editor and summarizer. Your goal is to transform a raw, dense summary into a professional, highly readable study guide.
+
+Document Title: {label}
+Document Category: {doc_type}
+
+Raw Summary Material (to be formatted):
+{bart_summary}
+
+INSTRUCTIONS:
+1. Create a structured, easy-to-read summary with plenty of vertical space.
+2. Provide a 2-3 sentence introductory summary.
+3. Use Markdown headings (###) for each major section or theme.
+4. Use double line breaks between sections to ensure the text is "breathable".
+5. Use bullet points for key concepts, definitions, and important details.
+6. **HIGHLIGHT** critical terms, keywords, and definitions by using **bold text**.
+7. Keep the tone academic yet very clear.
+8. Respond ONLY with the formatted summary.
+
+Follow this exact visual style:
+### [Main Section Heading]
+
+[Introductory paragraph for this section...]
+
+* **[Important Term]**: [Explanation].
+* **[Key Concept]**: [Explanation].
+
+### [Next Section Heading]
+
+* **[Next Point]**: [Details].
+
+OUTPUT (Beautifully formatted Markdown):"""
 
     try:
         model    = genai.GenerativeModel(GEMINI_MODEL)
-        response = model.generate_content(polish_prompt)
+        response = model.generate_content(prompt)
         final_summary = response.text
-    except Exception:
-        # If Gemini fails, use raw BART output
+    except Exception as e:
+        # If Gemini fails (e.g. rate limit), fallback to raw BART
+        print(f"⚠️ Gemini polish failed: {e}. Falling back to raw BART.")
         final_summary = bart_summary
 
     return {

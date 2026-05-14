@@ -2,20 +2,20 @@ import { useState, useEffect } from 'react';
 import {
   Users, Files, Target, Clock, ArrowUpRight,
   MoreHorizontal, FileText, ChevronRight, Activity,
-  Download, Sparkles
+  Download, Sparkles, Upload, Loader2
 } from 'lucide-react';
-import { getAnalytics } from '../services/api';
+import { getAnalytics, uploadPDFs, createChatSession } from '../services/api';
 
 const STATS_CONFIG = [
   { id: 'processed', label: 'Total Documents', icon: Files, color: 'text-primary-500', path: ['corpus', 'total_documents'] },
   { id: 'pages', label: 'Pages Indexed', icon: FileText, color: 'text-blue-500', path: ['corpus', 'total_pages'] },
   { id: 'chats', label: 'Total Sessions', icon: Users, color: 'text-emerald-500', path: ['chat', 'total_sessions'] },
-  { id: 'messages', label: 'AI Interactions', icon: Activity, color: 'text-amber-500', path: ['chat', 'total_messages'] },
 ];
 
-export default function Dashboard({ documents, setActiveTab }) {
+export default function Dashboard({ documents, setActiveTab, onSessionChange }) {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     getAnalytics().then(data => {
@@ -23,6 +23,29 @@ export default function Dashboard({ documents, setActiveTab }) {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
+
+  const handleQuickUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // 1. Create a brand new session for this PDF
+      const newSession = await createChatSession(`Chat: ${file.name}`);
+      onSessionChange(newSession.id);
+
+      // 2. Upload to that session
+      await uploadPDFs([file], newSession.id);
+
+      // 3. Navigate to chat
+      setActiveTab('chat');
+    } catch (err) {
+      console.error('Quick upload failed:', err);
+      alert('Failed to start new conversation. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const formatSize = (bytes) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -33,15 +56,36 @@ export default function Dashboard({ documents, setActiveTab }) {
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in-up">
       {/* ── Greeting ───────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-black text-surface-900 tracking-tight">Good Morning!</h2>
-          <p className="text-surface-500 font-medium mt-1">Your intelligence workspace is ready.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="text-center md:text-left">
+          <h2 className="text-3xl sm:text-4xl font-black text-surface-900 tracking-tight leading-tight">Good Morning!</h2>
+          <p className="text-surface-500 font-medium mt-2 text-base sm:text-lg">Your intelligence workspace is ready.</p>
         </div>
-        <button className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary-900 text-white font-bold text-sm shadow-lg shadow-primary-900/20 hover:opacity-90 transition-opacity w-full sm:w-auto">
-          <Download className="w-4 h-4" />
-          Export Reports
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            id="quick-pdf-upload"
+            type="file"
+            accept=".pdf"
+            className="hidden"
+            onChange={handleQuickUpload}
+          />
+          <button 
+            onClick={() => document.getElementById('quick-pdf-upload').click()}
+            disabled={uploading}
+            className="flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-primary-500 text-white font-bold text-sm shadow-xl shadow-primary-500/25 hover:bg-primary-600 hover:-translate-y-0.5 active:translate-y-0 transition-all w-full sm:w-auto"
+          >
+            {uploading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Upload className="w-5 h-5" />
+            )}
+            Upload PDF
+          </button>
+          <button className="flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-surface-900 text-white font-bold text-sm shadow-xl shadow-surface-900/10 hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 transition-all w-full sm:w-auto">
+            <Download className="w-5 h-5" />
+            Export Reports
+          </button>
+        </div>
       </div>
 
       {/* ── Stats Grid ─────────────────────────────────── */}
@@ -157,32 +201,6 @@ export default function Dashboard({ documents, setActiveTab }) {
                 <p className="text-xl font-black text-surface-900">{(analytics?.corpus?.total_chunks || 0).toLocaleString()}</p>
               </div>
             </div>
-          </div>
-
-          {/* Recent Messages Feed */}
-          <div className="bento-card bg-[#0b1612] text-white overflow-hidden relative group">
-             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Activity className="w-32 h-32 text-primary-500 rotate-12" />
-             </div>
-             <div className="flex items-center gap-2 mb-6 relative z-10">
-               <Activity className="w-5 h-5 text-primary-500" />
-               <h3 className="text-lg font-bold">Recent Activity</h3>
-             </div>
-             <div className="space-y-4 relative z-10">
-                {(analytics?.chat?.recent_messages || []).map((msg, i) => (
-                  <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm hover:border-primary-500/20 transition-colors">
-                    <p className="text-xs font-bold text-primary-400 mb-1">{msg.session_title} · {msg.role}</p>
-                    <p className="text-sm font-medium text-white/80 leading-snug truncate">
-                      {msg.content}
-                    </p>
-                  </div>
-                ))}
-                {(!analytics?.chat?.recent_messages || analytics.chat.recent_messages.length === 0) && !loading && (
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <p className="text-sm font-medium text-white/40 text-center">No recent activity found.</p>
-                  </div>
-                )}
-             </div>
           </div>
         </div>
       </div>

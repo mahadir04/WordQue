@@ -36,7 +36,10 @@ export default function ChatWindow({ sessionId, onSessionChange, onDocumentsChan
   const inputRef = useRef(null);
 
   const fetchMessages = useCallback(async (sid) => {
-    if (!sid) return;
+    if (!sid) {
+      setMessages([]);
+      return;
+    }
     try {
       const data = await getChatMessages(sid);
       setMessages(
@@ -113,9 +116,9 @@ export default function ChatWindow({ sessionId, onSessionChange, onDocumentsChan
   ];
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-white relative">
+    <div className="flex flex-col lg:flex-row h-full w-full overflow-hidden bg-white relative">
       {/* ── Main Chat Area ── */}
-      <div className={`flex flex-col h-full transition-all duration-300 ${selectedCitation ? 'w-2/3 border-r border-surface-200' : 'w-full'}`}>
+      <div className={`flex flex-col h-full transition-all duration-300 ${selectedCitation ? 'lg:w-2/3 border-r border-surface-200' : 'w-full'}`}>
       {/* Chat Header */}
       <div className="h-16 shrink-0 flex items-center justify-between px-6 bg-white border-b border-surface-200">
         <div className="flex items-center gap-3">
@@ -236,12 +239,12 @@ export default function ChatWindow({ sessionId, onSessionChange, onDocumentsChan
             )}
 
             <div
-              className={`max-w-[78%] ${
+              className={`max-w-[85%] sm:max-w-[78%] ${
                 msg.role === 'user'
-                  ? 'bg-surface-100 text-surface-900 rounded-3xl rounded-br-md px-6 py-4'
+                  ? 'bg-surface-100 text-surface-900 rounded-2xl rounded-br-md px-4 sm:px-6 py-3 sm:py-4'
                   : msg.error
-                    ? 'bg-accent-rose/10 border border-accent-rose/20 rounded-3xl rounded-bl-md px-6 py-4'
-                    : 'bg-white border border-surface-200 rounded-3xl rounded-bl-md px-6 py-5 shadow-sm'
+                    ? 'bg-accent-rose/10 border border-accent-rose/20 rounded-2xl rounded-bl-md px-4 sm:px-6 py-3 sm:py-4'
+                    : 'bg-white border border-surface-200 rounded-2xl rounded-bl-md px-4 sm:px-6 py-4 sm:py-5 shadow-sm'
               }`}
             >
               {/* Template tag */}
@@ -344,7 +347,7 @@ export default function ChatWindow({ sessionId, onSessionChange, onDocumentsChan
 
     {/* ── Slide-out PDF Drawer ── */}
     {selectedCitation && (
-      <div className="w-1/3 h-full bg-surface-50 flex flex-col shrink-0 border-l border-surface-200 animate-fade-in-up">
+      <div className="fixed inset-0 lg:relative lg:inset-auto lg:w-1/3 h-full bg-white lg:bg-surface-50 flex flex-col shrink-0 border-l border-surface-200 z-[70] lg:z-auto animate-fade-in-up">
         <div className="h-16 flex items-center justify-between px-6 border-b border-surface-200 bg-white shrink-0">
           <div>
              <h3 className="font-bold text-sm text-surface-900 truncate max-w-[200px]">{selectedCitation.filename}</h3>

@@ -21,15 +21,21 @@ def _get_pipeline():
     global _pipeline
     if _pipeline is None:
         try:
-            from transformers import pipeline as hf_pipeline
-            print("🤖 Loading BART summarization model (first run may take a moment)...")
+            from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+            print("🤖 Loading BART model and tokenizer (first run may take a moment)...")
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            _pipeline = hf_pipeline(
-                "summarization",
-                model="facebook/bart-large-cnn",
-                cache_dir=str(CACHE_DIR),
-                device=-1,  # CPU — set to 0 for GPU
+            
+            tokenizer = AutoTokenizer.from_pretrained(
+                "facebook/bart-large-cnn",
+                cache_dir=str(CACHE_DIR)
             )
+            model = AutoModelForSeq2SeqLM.from_pretrained(
+                "facebook/bart-large-cnn",
+                cache_dir=str(CACHE_DIR)
+            )
+            
+            # Use CPU by default (device=-1 in pipeline equivalent)
+            _pipeline = {"model": model, "tokenizer": tokenizer}
             print("✅ BART model loaded.")
         except Exception as e:
             print(f"⚠️  BART load failed ({e}). Falling back to extractive summary.")
@@ -68,22 +74,26 @@ def _chunk_for_bart(text: str, max_tokens: int = 900) -> list[str]:
     return chunks
 
 
+def _generate_bart(chunk: str, model, tokenizer, max_length: int, min_length: int) -> str:
+    """Helper to perform manual BART generation."""
+    inputs = tokenizer(chunk, return_tensors="pt", truncation=True, max_length=1024)
+    summary_ids = model.generate(
+        inputs["input_ids"],
+        max_length=max_length,
+        min_length=min_length,
+        do_sample=False,
+        length_penalty=2.0,
+        num_beams=4,
+        early_stopping=True
+    )
+    return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+
+
 def summarize_with_bart(text: str, max_length: int = 300, min_length: int = 60) -> str:
     """
-    Summarize text using BART (local, no API needed).
-
-    Handles documents longer than BART's context window via chunked
-    map-reduce: summarize each chunk → combine → final summary.
-
-    Args:
-        text:       Raw text to summarize.
-        max_length: Max tokens for each chunk summary.
-        min_length: Min tokens for each chunk summary.
-
-    Returns:
-        Final summary string.
+    Summarize text using BART (manual model/tokenizer pass).
     """
-    pipe = _get_pipeline()
+    pipe_data = _get_pipeline()
 
     if not text.strip():
         return "No content available to summarize."
@@ -91,8 +101,11 @@ def summarize_with_bart(text: str, max_length: int = 300, min_length: int = 60) 
     # Chunk the text
     chunks = _chunk_for_bart(text, max_tokens=900)
 
-    if pipe == "fallback":
+    if pipe_data == "fallback":
         return _extractive_fallback(text)
+
+    model = pipe_data["model"]
+    tokenizer = pipe_data["tokenizer"]
 
     # Map: summarize each chunk
     partial_summaries = []
@@ -100,15 +113,10 @@ def summarize_with_bart(text: str, max_length: int = 300, min_length: int = 60) 
         if len(chunk.split()) < 30:
             continue
         try:
-            result = pipe(
-                chunk,
-                max_length=max_length,
-                min_length=min_length,
-                do_sample=False,
-                truncation=True,
-            )
-            partial_summaries.append(result[0]["summary_text"])
-        except Exception:
+            summary = _generate_bart(chunk, model, tokenizer, max_length, min_length)
+            partial_summaries.append(summary)
+        except Exception as e:
+            print(f"⚠️ Chunk summary failed: {e}")
             partial_summaries.append(_extractive_fallback(chunk, max_sentences=3))
 
     if not partial_summaries:
@@ -124,15 +132,10 @@ def summarize_with_bart(text: str, max_length: int = 300, min_length: int = 60) 
     final_parts = []
     for chunk in combined_chunks:
         try:
-            result = pipe(
-                chunk,
-                max_length=max_length,
-                min_length=min_length,
-                do_sample=False,
-                truncation=True,
-            )
-            final_parts.append(result[0]["summary_text"])
-        except Exception:
+            summary = _generate_bart(chunk, model, tokenizer, max_length, min_length)
+            final_parts.append(summary)
+        except Exception as e:
+            print(f"⚠️ Reduce summary failed: {e}")
             final_parts.append(chunk[:500])
 
     return " ".join(final_parts)

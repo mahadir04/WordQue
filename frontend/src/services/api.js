@@ -95,6 +95,11 @@ export async function deleteDocument(docId) {
   return data;
 }
 
+export async function wipeKnowledgeBase() {
+  const { data } = await api.delete('/corpus/wipe');
+  return data;
+}
+
 export async function searchCorpus(query) {
   const { data } = await api.get('/search', { params: { q: query } });
   return data;
@@ -118,6 +123,11 @@ export async function createChatSession(title = 'New Chat') {
 
 export async function deleteChatSession(sessionId) {
   const { data } = await api.delete(`/history/${sessionId}`);
+  return data;
+}
+
+export async function clearAllHistory() {
+  const { data } = await api.delete('/history/clear-all');
   return data;
 }
 

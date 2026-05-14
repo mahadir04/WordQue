@@ -17,11 +17,13 @@ import GlobalSearch from './components/GlobalSearch';
 import NotificationCenter from './components/NotificationCenter';
 import RightSidebar from './components/RightSidebar';
 import DocumentManager from './components/DocumentManager';
+import ChatHistory from './components/ChatHistory';
+import SettingsPage from './components/Settings';
 import { getCorpus, healthCheck } from './services/api';
 
 const NAV_LINKS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'chat', label: 'Workspace', icon: FolderKanban, badge: 'AI' },
+  { id: 'chat', label: 'Workspace', icon: MessageSquare },
   { id: 'corpus', label: 'Knowledge Base', icon: Database },
   { id: 'tutor', label: 'Tutor Mode', icon: GraduationCap },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -54,9 +56,12 @@ function AppContent() {
 
   useEffect(() => {
     healthCheck()
-      .then(() => { setBackendOnline(true); refreshCorpus(); })
+      .then(() => { 
+        setBackendOnline(true); 
+        if (user) refreshCorpus(); 
+      })
       .catch(() => setBackendOnline(false));
-  }, [refreshCorpus]);
+  }, [refreshCorpus, user]);
 
   const handleSessionChange = (newSessionId) => {
     setActiveSessionId(newSessionId);
@@ -143,6 +148,22 @@ function AppContent() {
             })}
           </nav>
 
+          {/* Chat History */}
+          <div className="flex-1 px-4 py-4 overflow-y-auto border-t border-white/5">
+             <p className="px-4 text-[10px] font-black text-surface-500 uppercase tracking-widest mb-4">Chat History</p>
+             <ChatHistory 
+                activeSessionId={activeSessionId}
+                onSelectSession={(sid) => {
+                  setActiveSessionId(sid);
+                  setActiveTab('chat');
+                }}
+                onNewChat={() => {
+                  setActiveSessionId(null);
+                  setActiveTab('chat');
+                }}
+             />
+          </div>
+
           {/* Secondary Nav */}
           <div className="px-4 py-6 space-y-1 border-t border-white/5">
             {SECONDARY_NAV.map((link) => {
@@ -150,7 +171,12 @@ function AppContent() {
               return (
                 <button
                   key={link.id}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-surface-500 hover:text-surface-200 hover:bg-white/5 transition-all duration-200"
+                  onClick={() => setActiveTab(link.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    activeTab === link.id 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-surface-500 hover:text-surface-200 hover:bg-white/5'
+                  }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span className="text-sm font-semibold">{link.label}</span>
@@ -206,7 +232,13 @@ function AppContent() {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto bg-docu-bg px-4 sm:px-8 py-6 sm:py-8">
           <div className="max-w-[1440px] mx-auto h-full">
-            {activeTab === 'dashboard' && <Dashboard documents={documents} setActiveTab={setActiveTab} />}
+            {activeTab === 'dashboard' && (
+              <Dashboard 
+                documents={documents} 
+                setActiveTab={setActiveTab} 
+                onSessionChange={handleSessionChange}
+              />
+            )}
             
             {activeTab === 'chat' && (
               <div className="h-full bg-white rounded-[2.5rem] border border-surface-200 shadow-sm overflow-hidden flex flex-col">
@@ -236,6 +268,12 @@ function AppContent() {
             {activeTab === 'analytics' && (
               <div className="h-full">
                 <Analytics />
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div className="h-full">
+                <SettingsPage />
               </div>
             )}
 

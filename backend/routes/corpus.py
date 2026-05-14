@@ -3,10 +3,10 @@ from models import CorpusResponse, DeleteResponse, DocumentInfo
 from services.embedder import get_vector_store
 from routes.auth import get_current_user
 
-router = APIRouter(prefix="/api", tags=["corpus"])
+router = APIRouter(prefix="/api/corpus", tags=["corpus"])
 
 
-@router.get("/corpus", response_model=CorpusResponse)
+@router.get("", response_model=CorpusResponse)
 async def list_corpus(current_user: dict = Depends(get_current_user)):
     """List all documents in the corpus for the current user."""
     store = get_vector_store()
@@ -17,7 +17,7 @@ async def list_corpus(current_user: dict = Depends(get_current_user)):
     )
 
 
-@router.delete("/corpus/{doc_id}", response_model=DeleteResponse)
+@router.delete("/{doc_id}", response_model=DeleteResponse)
 async def delete_document(doc_id: str, current_user: dict = Depends(get_current_user)):
     """Remove a document from the corpus (only if owned by user)."""
     store = get_vector_store()
@@ -72,7 +72,7 @@ async def search_corpus(q: str, current_user: dict = Depends(get_current_user)):
         return {"results": []}
         
     store = get_vector_store()
-    results = store.search(q, k=5, user_id=current_user["id"])
+    results = store.search(q, top_k=5, user_id=current_user["id"])
     
     formatted_results = []
     for res in results:
@@ -85,3 +85,14 @@ async def search_corpus(q: str, current_user: dict = Depends(get_current_user)):
         })
         
     return {"results": formatted_results}
+@router.delete("/wipe")
+async def wipe_corpus(current_user: dict = Depends(get_current_user)):
+    """Remove all documents from the corpus for the current user."""
+    store = get_vector_store()
+    user_id = current_user["id"]
+    
+    docs = store.get_all_docs(user_id=user_id)
+    for doc in docs:
+        store.remove_document(doc["doc_id"], user_id=user_id)
+        
+    return {"ok": True, "deleted_count": len(docs)}
