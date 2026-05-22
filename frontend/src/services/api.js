@@ -4,8 +4,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
-  timeout: 600000, // 10 min to allow LLM rate limit backoffs
+  baseURL: import.meta.env.PROD ? '/api' : '/api', 
+  timeout: 600000, 
 });
 
 // ── Auth interceptor — attach JWT to all requests ─────────

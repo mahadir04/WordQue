@@ -63,6 +63,27 @@ app.include_router(auth.router)
 app.include_router(history.router)
 app.include_router(analytics.router)
 
+# ── Serve Static Frontend ───────────────────────────────────
+import os
+from fastapi.responses import FileResponse
+
+# Check if static directory exists (production)
+if os.path.exists("static"):
+    app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Serve static files if they exist
+        file_path = os.path.join("static", full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        # Fallback to index.html for React routing
+        return FileResponse("static/index.html")
+else:
+    @app.get("/")
+    async def root():
+        return {"message": "WordQue API is running. Static frontend not found (Development Mode)."}
+
 
 @app.get("/api/health")
 async def health():
